@@ -1,7 +1,9 @@
 export const styles = {
-  bg: {
+  container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center"
+  },
+  map: {
+    flex: 1,
+    width: "100%"
   }
 };
