@@ -7,17 +7,52 @@ import icons from "../../constants/icons.js";
 import { getCurrentPositionAsync, requestForegroundPermissionsAsync, reverseGeocodeAsync } from "expo-location";
 
 function Passenger(props) {
-  
+
+  const userId = 1; 
   const [myLocation, setMyLocation] = useState({});
   const [title, setTitle] = useState("");
   const [pickupAddress, setPickupAddress] = useState("");
   const [dropoffAddress, setDropoffAddress] = useState("");
+  const [status, setStatus] = useState("");
+  const [rideId, setRideId] = useState(0);
+  const [driverName, setDriverName] = useState("");
 
   async function RequestRideFromUser() {
     // Acessa dados na API...
 
-    const response = {};
-
+    // const response = {};
+    /*
+    const response = {
+      ride_id: 1,
+      passenger_user_id: 1,
+      passenger_name: "Breno Braga",
+      passenger_phone: "(21) 98047-9073",
+      pickup_address: "Rua Heráclito Graça, 149 - Lins de Vasconselos",
+      pickup_latitude: "-22.911096",
+      pickup_longitude: "-43.282761",
+      dropoff_address: "Shopping Nova América",
+      status: "P",
+      driver_user_id: null,
+      driver_name: null,
+      driver_phone: null
+    };
+    */
+    
+    const response = {
+      ride_id: 1,
+      passenger_user_id: 1,
+      passenger_name: "Breno Braga",
+      passenger_phone: "(21) 98047-9073",
+      pickup_address: "Rua Heráclito Graça, 149 - Lins de Vasconselos",
+      pickup_latitude: "-22.911096",
+      pickup_longitude: "-43.282761",
+      dropoff_address: "Shopping Nova América",
+      status: "A",
+      driver_user_id: 2,
+      driver_name: "Vitor Araujo",
+      driver_phone: "(21) 99999-9999"
+    };
+    
     return response;
   }
 
@@ -56,8 +91,8 @@ function Passenger(props) {
 
     if(!response.ride_id) {
 
-      // const location = {latitude: -22.903622, longitude: -43.279308};
-      const location = await RequestPermissionAndGetLocation();
+      const location = {latitude: -22.903622, longitude: -43.279308};
+      // const location = await RequestPermissionAndGetLocation();
       
       if(location.latitude) {
         setTitle("Encontrar motoristas...");
@@ -68,8 +103,54 @@ function Passenger(props) {
       }
 
     } else {
+      setTitle(response.status == "P" ? "Procurando motorista parceiro" : "Corrida confirmada" );
+      setMyLocation({
+        latitude: Number(response.pickup_latitude),
+        longitude: Number(response.pickup_longitude)
+      });
 
+      setPickupAddress(response.pickup_address);
+      setDropoffAddress(response.dropoff_address);
+      setStatus(response.status);
+      setRideId(response.ride_id);
+      setDriverName(response.driver_name + " - " + response.driver_phone);
     }
+  }
+
+  async function AskForRide() {
+    const json = {
+      passenger: userId,
+      pickup_address: pickupAddress,
+      dropoff_address: dropoffAddress,
+      pickup_latitude: myLocation.latitude,
+      pickup_longitude: myLocation.longitude
+    }
+
+    console.log("Fazer post para o servidor: ", json);  
+
+    props.navigation.goBack();
+  }
+
+  async function CancelRide() {
+    const json = {
+      passenger_user_id: userId,
+      ride_id: rideId
+    };
+
+    console.log("Cancelar corrida", json);
+
+    props.navigation.goBack();
+  }
+
+  async function FinishRide() {
+    const json = {
+      passenger_user_id: userId,
+      ride_id: rideId
+    };
+
+    console.log("Finalizar corrida", json);
+
+    props.navigation.goBack();
   }
 
   useEffect(() => {
@@ -111,16 +192,43 @@ function Passenger(props) {
 
             <View style={styles.footerFields}>
               <Text>Origem</Text>
-              <TextInput style={styles.input} value={pickupAddress}/>
+              <TextInput 
+                style={styles.input} 
+                value={pickupAddress} 
+                onChangeText={(text) => setPickupAddress(text)}
+                editable={status == "" ? true : false}
+              />
             </View>
         
             <View style={styles.footerFields}>
               <Text>Destino</Text>
-              <TextInput style={styles.input} value={dropoffAddress}/>
+              <TextInput 
+                style={styles.input} 
+                value={dropoffAddress} 
+                onChangeText={(text) => setDropoffAddress(text)}
+                editable={status == "" ? true : false}
+              />
             </View>
 
+            {
+              status == "A" &&
+              <View style={styles.footerFields}>
+                <Text>Motorista</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={driverName} 
+                  editable={false}
+                />
+              </View>
+            }
           </View>
-          <MyButton text="CONFIRMAR" theme="default"/>
+
+          {status == "" && <MyButton text="CONFIRMAR" theme="default" onClick={AskForRide}/>}
+
+          {status == "P" && <MyButton text="CANCELAR" theme="red" onClick={CancelRide}/>}
+
+          {status == "A" && <MyButton text="FINALIZAR CORRIDA" theme="red" onClick={FinishRide}/>}
+
         </> 
         : 
         <View style={styles.loading}>
