@@ -5,6 +5,7 @@ import { styles } from "./passenger.style.js";
 import { useEffect, useState } from "react";
 import icons from "../../constants/icons.js";
 import { getCurrentPositionAsync, requestForegroundPermissionsAsync, reverseGeocodeAsync } from "expo-location";
+import { api, HandleError } from "../../constants/api.js";
 
 function Passenger(props) {
 
@@ -18,42 +19,27 @@ function Passenger(props) {
   const [driverName, setDriverName] = useState("");
 
   async function RequestRideFromUser() {
-    // Acessa dados na API...
+    
+    try {
+      
+      const response = await api.get("/rides", {
+        params: {
+          passenger_user_id: userId,
+          pickup_date: new Date().toISOString("pt-BR", {timeZone: "America/Rio_de_Janeiro"}).substring(0, 10),
+          status_not: "F"
+        }
+      });
 
-    // const response = {};
-    /*
-    const response = {
-      ride_id: 1,
-      passenger_user_id: 1,
-      passenger_name: "Breno Braga",
-      passenger_phone: "(21) 98047-9073",
-      pickup_address: "Rua Heráclito Graça, 149 - Lins de Vasconselos",
-      pickup_latitude: "-22.911096",
-      pickup_longitude: "-43.282761",
-      dropoff_address: "Shopping Nova América",
-      status: "P",
-      driver_user_id: null,
-      driver_name: null,
-      driver_phone: null
-    };
-    */
-    
-    const response = {
-      ride_id: 1,
-      passenger_user_id: 1,
-      passenger_name: "Breno Braga",
-      passenger_phone: "(21) 98047-9073",
-      pickup_address: "Rua Heráclito Graça, 149 - Lins de Vasconselos",
-      pickup_latitude: "-22.911096",
-      pickup_longitude: "-43.282761",
-      dropoff_address: "Shopping Nova América",
-      status: "A",
-      driver_user_id: 2,
-      driver_name: "Vitor Araujo",
-      driver_phone: "(21) 99999-9999"
-    };
-    
-    return response;
+      if (response.data[0]) {
+        return response.data[0];
+      } else {
+        return {};
+      }
+
+    } catch (error) {
+      HandleError(error);
+      props.navigation.goBack();
+    }
   }
 
   async function RequestPermissionAndGetLocation() {
@@ -118,39 +104,59 @@ function Passenger(props) {
   }
 
   async function AskForRide() {
-    const json = {
-      passenger: userId,
-      pickup_address: pickupAddress,
-      dropoff_address: dropoffAddress,
-      pickup_latitude: myLocation.latitude,
-      pickup_longitude: myLocation.longitude
+
+    try {
+
+      const json = {
+        passenger_user_id: userId,
+        pickup_address: pickupAddress,
+        dropoff_address: dropoffAddress,
+        pickup_latitude: myLocation.latitude,
+        pickup_longitude: myLocation.longitude
+      }
+      
+      const response = await api.post("/rides", json);
+
+      if (response.data) {
+        props.navigation.goBack();
+      } 
+
+    } catch (error) {
+      HandleError(error);
     }
-
-    console.log("Fazer post para o servidor: ", json);  
-
-    props.navigation.goBack();
   }
 
   async function CancelRide() {
-    const json = {
-      passenger_user_id: userId,
-      ride_id: rideId
-    };
 
-    console.log("Cancelar corrida", json);
+    try {
 
-    props.navigation.goBack();
+      const response = await api.delete("/rides/" + rideId);
+
+      if (response.data) {
+        props.navigation.goBack();
+      } 
+
+    } catch (error) {
+      HandleError(error);
+    }
   }
 
   async function FinishRide() {
     const json = {
-      passenger_user_id: userId,
-      ride_id: rideId
+      passenger_user_id: userId
     };
 
-    console.log("Finalizar corrida", json);
+    try {
 
-    props.navigation.goBack();
+      const response = await api.put("/rides/" + rideId + "/finish", json);
+
+      if (response.data) {
+        props.navigation.goBack();
+      } 
+
+    } catch (error) {
+      HandleError(error);
+    }
   }
 
   useEffect(() => {
